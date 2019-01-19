@@ -408,13 +408,13 @@ static ModelData* openvrControllerNewModelData(Controller* controller) {
   model->buffers = calloc(model->bufferCount, sizeof(ModelBuffer));
 
   model->buffers[0] = (ModelBuffer) {
-    .data = vrModel->rVertexData,
+    .data = (char*) vrModel->rVertexData,
     .size = vrModel->unVertexCount * vertexSize,
     .stride = vertexSize
   };
 
   model->buffers[1] = (ModelBuffer) {
-    .data = vrModel->rIndexData,
+    .data = (char*) vrModel->rIndexData,
     .size = vrModel->unTriangleCount * 3 * sizeof(uint16_t),
     .stride = sizeof(uint16_t)
   };

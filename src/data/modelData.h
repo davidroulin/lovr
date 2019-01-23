@@ -192,5 +192,7 @@ typedef struct {
 } ModelDataIO;
 
 ModelData* lovrModelDataInit(ModelData* model, Blob* blob, ModelDataIO io);
+ModelData* lovrModelDataInitGltf(ModelData* model, Blob* blob, ModelDataIO io);
+ModelData* lovrModelDataInitObj(ModelData* model, Blob* blob, ModelDataIO io);
 #define lovrModelDataCreate(...) lovrModelDataInit(lovrAlloc(ModelData), __VA_ARGS__)
 void lovrModelDataDestroy(void* ref);

@@ -19,5 +19,15 @@ void lovrModelDataDestroy(void* ref) {
   for (int i = 0; i < model->imageCount; i++) {
     lovrRelease(model->images[i]);
   }
-  free(model->data);
+  free(model->blobs);
+  free(model->images);
+  free(model->animations);
+  free(model->attributes);
+  free(model->buffers);
+  free(model->textures);
+  free(model->materials);
+  free(model->primitives);
+  free(model->nodes);
+  free(model->skins);
+  free(model->misc);
 }

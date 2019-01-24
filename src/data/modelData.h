@@ -163,7 +163,6 @@ typedef struct {
 
 typedef struct {
   Ref ref;
-  uint8_t* data;
   Blob** blobs;
   TextureData** images;
   ModelAnimation* animations;
@@ -185,6 +184,7 @@ typedef struct {
   int nodeCount;
   int skinCount;
   int rootNode;
+  uint8_t* misc;
 } ModelData;
 
 typedef struct {

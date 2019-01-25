@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #define MAX_STACK_TOKENS 1024
 
@@ -13,10 +14,10 @@
 
 #define STR_EQ(k, s) !strncmp(k.data, s, k.length)
 #define NOM_VALUE(j, t) nomValue(j, t, 1, 0)
-#define NOM_INT(j, t) strtol(j + (t++)->start, NULL, 10)
+#define NOM_INT(j, t) nomInt(j + (t++)->start)
 #define NOM_STR(j, t) (gltfString) { (char* )j + t->start, t->end - t->start }; t++
 #define NOM_BOOL(j, t) (*(j + (t++)->start) == 't')
-#define NOM_FLOAT(j, t) strtof(j + (t++)->start, NULL)
+#define NOM_FLOAT(j, t) atof(j + (t++)->start)
 
 typedef struct {
   char* data;
@@ -54,6 +55,14 @@ typedef struct {
   uint32_t node;
   uint32_t nodeCount;
 } gltfScene;
+
+static int nomInt(const char* s) {
+  int n = 0;
+  bool negative = (*s == '-');
+  s += negative;
+  while (isdigit(*s)) { n = 10 * n + (*s++ - '0'); }
+  return negative ? -n : n;
+}
 
 static int nomValue(const char* data, jsmntok_t* token, int count, int sum) {
   if (count == 0) { return sum; }

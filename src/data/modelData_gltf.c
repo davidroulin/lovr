@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define MAX_STACK_TOKENS 1024
+
 #define MAGIC_glTF 0x46546c67
 #define MAGIC_JSON 0x4e4f534a
 #define MAGIC_BIN 0x004e4942
@@ -126,15 +128,29 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     binOffset = 0;
   }
 
+  // Parse JSON
   jsmn_parser parser;
   jsmn_init(&parser);
-  int tokenCount = jsmn_parse(&parser, json, jsonLength, NULL, 0);
-  jsmntok_t* tokens = malloc(tokenCount * sizeof(jsmntok_t));
-  jsmn_init(&parser);
-  tokenCount = jsmn_parse(&parser, json, jsonLength, tokens, tokenCount);
+
+  jsmntok_t stackTokens[MAX_STACK_TOKENS];
+  jsmntok_t* heapTokens = NULL;
+  jsmntok_t* tokens = &stackTokens[0];
+  int tokenCount = 0;
+
+  if ((tokenCount = jsmn_parse(&parser, json, jsonLength, stackTokens, MAX_STACK_TOKENS)) == JSMN_ERROR_NOMEM) {
+    size_t capacity = MAX_STACK_TOKENS;
+
+    do {
+      capacity *= 2;
+      lovrAssert(heapTokens = realloc(heapTokens, capacity), "Out of memory");
+      tokenCount = jsmn_parse(&parser, json, jsonLength, heapTokens, capacity);
+    } while (tokenCount == JSMN_ERROR_NOMEM);
+
+    tokens = heapTokens;
+  }
 
   if (tokenCount <= 0 || tokens[0].type != JSMN_OBJECT) {
-    free(tokens);
+    free(heapTokens);
     return NULL;
   }
 
@@ -313,7 +329,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
 
     } else if (STR_EQ(key, "nodes")) {
       info.nodes = token;
-      model->nodeCount += token->size;
+      model->nodeCount = token->size;
       token = aggregate(json, token, "children", &info.childCount);
       info.miscSize += info.childCount * sizeof(uint32_t);
 
@@ -356,7 +372,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
 
   // Allocate misc data
   size_t offset = 0;
-  model->misc = calloc(1, info.miscSize);
+  model->misc = malloc(info.miscSize);
   ModelAnimationChannel* channels = (ModelAnimationChannel*) (model->misc + offset); offset += info.animationChannelCount * sizeof(ModelAnimationChannel);
   uint32_t* nodeChildren = (uint32_t*) (model->misc + offset); offset += info.childCount * sizeof(uint32_t);
   uint32_t* skinJoints = (uint32_t*) (model->misc + offset); offset += info.jointCount * sizeof(uint32_t);
@@ -838,6 +854,6 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   free(meshes);
   free(samplers);
   free(scenes);
-  free(tokens);
+  free(heapTokens);
   return model;
 }

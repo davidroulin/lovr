@@ -38,11 +38,11 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
       int vt1, vt2, vt3;
       int vn1, vn2, vn3;
       if (sscanf(data + 2, "%d %d %d\n%n", &v1, &v2, &v3, &lineLength) == 3) {
-        vec_pusharr(&indices, ((int[9]) { v1, -1, -1, v2, -1, -1, v3, -1, -1 }));
+        vec_pusharr(&indices, ((int[9]) { v1, -1, -1, v2, -1, -1, v3, -1, -1 }), 9);
       } else if (sscanf(data + 2, "%d//%d %d//%d %d//%d\n%n", &v1, &vn1, &v2, &vn2, &v3, &vn3, &lineLength) == 6) {
-        vec_pusharr(&indices, ((int[9]) { v1, vn1, -1, v2, vn2, -1, v3, vn3, -1 }));
+        vec_pusharr(&indices, ((int[9]) { v1, vn1, -1, v2, vn2, -1, v3, vn3, -1 }), 9);
       } else if (sscanf(data + 2, "%d/%d/%d %d/%d/%d %d/%d/%d\n%n", &v1, &vt1, &vn1, &v2, &vt2, &vn2, &v3, &vt3, &vn3, &lineLength) == 9) {
-        vec_pusharr(&indices, ((int[9]) { v1, vn1, vt1, v2, vn2, vt2, v3, vn3, vt3 }));
+        vec_pusharr(&indices, ((int[9]) { v1, vn1, vt1, v2, vn2, vt2, v3, vn3, vt3 }), 9);
       } else {
         lovrThrow("Bad OBJ: Unknown face format");
       }

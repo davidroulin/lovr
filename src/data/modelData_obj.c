@@ -6,17 +6,23 @@
 ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) {
   char* data = (char*) source->data;
   size_t length = source->size;
-  vec_int_t indices;
+
+  vec_float_t vertexBuffer;
+  vec_int_t indexBuffer;
+  map_int_t vertexMap;
   vec_float_t vertices;
   vec_float_t normals;
   vec_float_t uvs;
-  vec_init(&indices);
+
+  vec_init(&vertexBuffer);
+  vec_init(&indexBuffer);
+  map_init(&vertexMap);
   vec_init(&vertices);
   vec_init(&normals);
   vec_init(&uvs);
 
   while (length > 0) {
-    int lineLength;
+    int lineLength = 0;
 
     if (STARTS_WITH(data, "v ")) {
       float x, y, z;
@@ -34,18 +40,42 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
       lovrAssert(count == 2, "Bad OBJ: Expected 2 coordinates for texture coordinate");
       vec_pusharr(&uvs, ((float[2]) { u, v }), 2);
     } else if (STARTS_WITH(data, "f ")) {
-      int v1, v2, v3;
-      int vt1, vt2, vt3;
-      int vn1, vn2, vn3;
-      if (sscanf(data + 2, "%d %d %d\n%n", &v1, &v2, &v3, &lineLength) == 3) {
-        vec_pusharr(&indices, ((int[9]) { v1, -1, -1, v2, -1, -1, v3, -1, -1 }), 9);
-      } else if (sscanf(data + 2, "%d//%d %d//%d %d//%d\n%n", &v1, &vn1, &v2, &vn2, &v3, &vn3, &lineLength) == 6) {
-        vec_pusharr(&indices, ((int[9]) { v1, vn1, -1, v2, vn2, -1, v3, vn3, -1 }), 9);
-      } else if (sscanf(data + 2, "%d/%d/%d %d/%d/%d %d/%d/%d\n%n", &v1, &vt1, &vn1, &v2, &vt2, &vn2, &v3, &vt3, &vn3, &lineLength) == 9) {
-        vec_pusharr(&indices, ((int[9]) { v1, vn1, vt1, v2, vn2, vt2, v3, vn3, vt3 }), 9);
-      } else {
-        lovrThrow("Bad OBJ: Unknown face format");
+      char* s = data + 2;
+      for (int i = 0; i < 3; i++) {
+        char terminator = i == 2 ? '\n' : ' ';
+        char* space = strchr(s, terminator);
+        if (space) {
+          *space = '\0'; // I'll be back
+          int* index = map_get(&vertexMap, s);
+          if (index) {
+            vec_push(&indexBuffer, *index);
+          } else {
+            int v, vt, vn;
+            int newIndex = vertexBuffer.length / 8;
+            vec_push(&indexBuffer, newIndex);
+            map_set(&vertexMap, s, newIndex);
+
+            // Can be improved
+            if (sscanf(s, "%d/%d/%d", &v, &vt, &vn) == 3) {
+              vec_pusharr(&vertexBuffer, vertices.data + 3 * v, 3);
+              vec_pusharr(&vertexBuffer, normals.data + 3 * vn, 3);
+              vec_pusharr(&vertexBuffer, uvs.data + 2 * vn, 2);
+            } else if (sscanf(s, "%d//%d", &v, &vn) == 2) {
+              vec_pusharr(&vertexBuffer, vertices.data + 3 * v, 3);
+              vec_pusharr(&vertexBuffer, normals.data + 3 * vn, 3);
+              vec_pusharr(&vertexBuffer, ((float[2]) { 0 }), 2);
+            } else if (sscanf(s, "%d", &v) == 1) {
+              vec_pusharr(&vertexBuffer, vertices.data + 3 * v, 3);
+              vec_pusharr(&vertexBuffer, ((float[5]) { 0 }), 5);
+            } else {
+              lovrThrow("Bad OBJ: Unknown face format");
+            }
+          }
+          *space = terminator;
+          s = space + 1;
+        }
       }
+      lineLength = s - data + 1;
     } else {
       char* newline = memchr(data, '\n', length);
       lineLength = newline - data + 1;
@@ -55,7 +85,12 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
     length -= lineLength;
   }
 
-  vec_deinit(&indices);
+  model->blobCount = 2;
+  model->blobs = calloc(model->blobCount, sizeof(Blob*));
+  model->blobs[0] = lovrBlobCreate(vertexBuffer.data, vertexBuffer.capacity, "obj vertex data");
+  model->blobs[1] = lovrBlobCreate(indexBuffer.data, indexBuffer.capacity, "obj index data");
+
+  map_deinit(&vertexMap);
   vec_deinit(&vertices);
   vec_deinit(&normals);
   vec_deinit(&uvs);

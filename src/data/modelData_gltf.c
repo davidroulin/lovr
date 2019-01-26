@@ -630,7 +630,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
       material->scalars[SCALAR_METALNESS] = 1.f;
       material->scalars[SCALAR_ROUGHNESS] = 1.f;
       material->colors[COLOR_DIFFUSE] = (Color) { 1.f, 1.f, 1.f, 1.f };
-      material->colors[COLOR_EMISSIVE] = (Color) { 1.f, 1.f, 1.f, 1.f };
+      material->colors[COLOR_EMISSIVE] = (Color) { 0.f, 0.f, 0.f, 0.f };
       memset(material->textures, 0xff, MAX_MATERIAL_TEXTURES * sizeof(int));
 
       for (int k = (token++)->size; k > 0; k--) {

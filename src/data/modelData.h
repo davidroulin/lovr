@@ -163,6 +163,7 @@ typedef struct {
 
 typedef struct {
   Ref ref;
+  void* data;
   Blob** blobs;
   TextureData** images;
   ModelAnimation* animations;
@@ -185,6 +186,15 @@ typedef struct {
   int skinCount;
   int rootNode;
   uint8_t* misc;
+
+  ModelAnimationChannel* channels;
+  uint32_t* children;
+  uint32_t* joints;
+  char* chars;
+  int channelCount;
+  int childCount;
+  int jointCount;
+  int charCount;
 } ModelData;
 
 typedef struct {
@@ -196,3 +206,4 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* blob, ModelDataIO io);
 ModelData* lovrModelDataInitObj(ModelData* model, Blob* blob, ModelDataIO io);
 #define lovrModelDataCreate(...) lovrModelDataInit(lovrAlloc(ModelData), __VA_ARGS__)
 void lovrModelDataDestroy(void* ref);
+void lovrModelDataAllocate(ModelData* model);

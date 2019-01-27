@@ -177,10 +177,6 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     jsmntok_t* nodes;
     jsmntok_t* scenes;
     jsmntok_t* skins;
-    int animationChannelCount;
-    int childCount;
-    int jointCount;
-    int charCount;
     int sceneCount;
   } info = { 0 };
 
@@ -207,18 +203,14 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
         if (t->size > 0) {
           for (int k = (t++)->size; k > 0; k--) {
             gltfString key = NOM_STR(json, t);
-            if (STR_EQ(key, "channels")) { info.animationChannelCount += t->size; }
+            if (STR_EQ(key, "channels")) { model->channelCount += t->size; }
             else if (STR_EQ(key, "samplers")) { samplerCount += t->size; }
-            else if (STR_EQ(key, "name")) {
-              info.charCount += t->end - t->start + 1;
-              info.miscSize += t->end - t->start + 1;
-            }
+            else if (STR_EQ(key, "name")) { model->charCount += t->end - t->start + 1; }
             t += NOM_VALUE(json, t);
           }
         }
       }
 
-      info.miscSize += info.animationChannelCount * sizeof(ModelAnimationChannel);
       animationSamplers = malloc(samplerCount * sizeof(gltfAnimationSampler));
       gltfAnimationSampler* sampler = animationSamplers;
       for (int i = (token++)->size; i > 0; i--) {
@@ -339,8 +331,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     } else if (STR_EQ(key, "nodes")) {
       info.nodes = token;
       model->nodeCount = token->size;
-      token = aggregate(json, token, "children", &info.childCount);
-      info.miscSize += info.childCount * sizeof(uint32_t);
+      token = aggregate(json, token, "children", &model->childCount);
 
     } else if (STR_EQ(key, "scene")) {
       rootScene = NOM_INT(json, token);
@@ -365,8 +356,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     } else if (STR_EQ(key, "skins")) {
       info.skins = token;
       model->skinCount = token->size;
-      token = aggregate(json, token, "joints", &info.jointCount);
-      info.miscSize += info.jointCount * sizeof(uint32_t);
+      token = aggregate(json, token, "joints", &model->jointCount);
 
     } else {
       token += NOM_VALUE(json, token);
@@ -375,23 +365,17 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
 
   // Make space for fake root node if the root scene has multiple root nodes
   if (info.sceneCount > 0 && scenes[rootScene].nodeCount > 1) {
-    info.childCount += model->nodeCount;
+    model->childCount += model->nodeCount;
     model->nodeCount++;
   }
 
-  // Allocate misc data
-  size_t offset = 0;
-  model->misc = malloc(info.miscSize);
-  ModelAnimationChannel* channels = (ModelAnimationChannel*) (model->misc + offset); offset += info.animationChannelCount * sizeof(ModelAnimationChannel);
-  uint32_t* nodeChildren = (uint32_t*) (model->misc + offset); offset += info.childCount * sizeof(uint32_t);
-  uint32_t* skinJoints = (uint32_t*) (model->misc + offset); offset += info.jointCount * sizeof(uint32_t);
-  char* chars = (char*) (model->misc + offset); offset += info.charCount * sizeof(char);
-  int childIndex = 0;
+  // Allocate all the memory
+  lovrModelDataAllocate(model);
 
   // Blobs
   if (model->blobCount > 0) {
     jsmntok_t* token = info.buffers;
-    Blob** blob = model->blobs = calloc(model->blobCount, sizeof(Blob*));
+    Blob** blob = model->blobs;
     for (int i = (token++)->size; i > 0; i--, blob++) {
       gltfString uri = { 0 };
       size_t size = 0;
@@ -422,7 +406,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   // Buffers
   if (model->bufferCount > 0) {
     jsmntok_t* token = info.bufferViews;
-    ModelBuffer* buffer = model->buffers = calloc(model->bufferCount, sizeof(ModelBuffer));
+    ModelBuffer* buffer = model->buffers;
     for (int i = (token++)->size; i > 0; i--, buffer++) {
       size_t offset = 0;
 
@@ -446,7 +430,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   // Attributes
   if (model->attributeCount > 0) {
     jsmntok_t* token = info.attributes;
-    ModelAttribute* attribute = model->attributes = calloc(model->attributeCount, sizeof(ModelAttribute));
+    ModelAttribute* attribute = model->attributes;
     for (int i = (token++)->size; i > 0; i--, attribute++) {
       for (int k = (token++)->size; k > 0; k--) {
         gltfString key = NOM_STR(json, token);
@@ -496,7 +480,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     int channelIndex = 0;
     int baseSampler = 0;
     jsmntok_t* token = info.animations;
-    ModelAnimation* animation = model->animations = calloc(model->animationCount, sizeof(ModelAnimation));
+    ModelAnimation* animation = model->animations;
     for (int i = (token++)->size; i > 0; i--, animation++) {
       int samplerCount = 0;
       animation->name = NULL;
@@ -504,7 +488,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
         gltfString key = NOM_STR(json, token);
         if (STR_EQ(key, "channels")) {
           animation->channelCount = (token++)->size;
-          animation->channels = channels + channelIndex;
+          animation->channels = model->channels + channelIndex;
           channelIndex += animation->channelCount;
           for (int j = 0; j < animation->channelCount; j++) {
             ModelAnimationChannel* channel = &animation->channels[j];
@@ -558,10 +542,10 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
           token += NOM_VALUE(json, token);
         } else if (STR_EQ(key, "name")) {
           gltfString name = NOM_STR(json, token);
-          memcpy(chars, name.data, name.length);
-          chars[name.length] = '\0';
-          animation->name = chars;
-          chars += name.length;
+          memcpy(model->chars, name.data, name.length);
+          model->chars[name.length] = '\0';
+          animation->name = model->chars;
+          model->chars += name.length;
         } else {
           token += NOM_VALUE(json, token);
         }
@@ -573,7 +557,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   // Images
   if (model->imageCount > 0) {
     jsmntok_t* token = info.images;
-    TextureData** image = model->images = calloc(model->imageCount, sizeof(TextureData**));
+    TextureData** image = model->images;
     for (int i = (token++)->size; i > 0; i--, image++) {
       for (int k = (token++)->size; k > 0; k--) {
         gltfString key = NOM_STR(json, token);
@@ -604,7 +588,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   // Textures
   if (model->textureCount > 0) {
     jsmntok_t* token = info.textures;
-    ModelTexture* texture = model->textures = calloc(model->textureCount, sizeof(ModelTexture));
+    ModelTexture* texture = model->textures;
     for (int i = (token++)->size; i > 0; i--, texture++) {
       texture->filter.mode = FILTER_TRILINEAR;
       texture->wrap.s = texture->wrap.t = WRAP_REPEAT;
@@ -625,7 +609,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   // Materials
   if (model->materialCount > 0) {
     jsmntok_t* token = info.materials;
-    ModelMaterial* material = model->materials = calloc(model->materialCount, sizeof(ModelMaterial));
+    ModelMaterial* material = model->materials;
     for (int i = (token++)->size; i > 0; i--, material++) {
       material->scalars[SCALAR_METALNESS] = 1.f;
       material->scalars[SCALAR_ROUGHNESS] = 1.f;
@@ -679,7 +663,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   if (model->primitiveCount > 0) {
     int primitiveIndex = 0;
     jsmntok_t* token = info.meshes;
-    ModelPrimitive* primitive = model->primitives = calloc(model->primitiveCount, sizeof(ModelPrimitive));
+    ModelPrimitive* primitive = model->primitives;
     for (int i = (token++)->size; i > 0; i--) {
       for (int k = (token++)->size; k > 0; k--) {
         gltfString key = NOM_STR(json, token);
@@ -736,9 +720,10 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   }
 
   // Nodes
+  int childIndex = 0;
   if (model->nodeCount > 0) {
     jsmntok_t* token = info.nodes;
-    ModelNode* node = model->nodes = calloc(model->nodeCount, sizeof(ModelNode));
+    ModelNode* node = model->nodes;
     for (int i = (token++)->size; i > 0; i--, node++) {
       float translation[3] = { 0, 0, 0 };
       float rotation[4] = { 0, 0, 0, 0 };
@@ -756,10 +741,10 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
         } else if (STR_EQ(key, "skin")) {
           node->skin = NOM_INT(json, token);
         } else if (STR_EQ(key, "children")) {
-          node->children = &nodeChildren[childIndex];
+          node->children = &model->children[childIndex];
           node->childCount = (token++)->size;
           for (uint32_t j = 0; j < node->childCount; j++) {
-            nodeChildren[childIndex++] = NOM_INT(json, token);
+            model->children[childIndex++] = NOM_INT(json, token);
           }
         } else if (STR_EQ(key, "matrix")) {
           lovrAssert((token++)->size == 16, "Node matrix needs 16 elements");
@@ -802,7 +787,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
   if (model->skinCount > 0) {
     int jointIndex = 0;
     jsmntok_t* token = info.skins;
-    ModelSkin* skin = model->skins = calloc(model->skinCount, sizeof(ModelSkin));
+    ModelSkin* skin = model->skins;
     for (int i = (token++)->size; i > 0; i--, skin++) {
       for (int k = (token++)->size; k > 0; k--) {
         gltfString key = NOM_STR(json, token);
@@ -813,10 +798,10 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
         } else if (STR_EQ(key, "skeleton")) {
           skin->skeleton = NOM_INT(json, token);
         } else if (STR_EQ(key, "joints")) {
-          skin->joints = &skinJoints[jointIndex];
+          skin->joints = &model->joints[jointIndex];
           skin->jointCount = (token++)->size;
           for (uint32_t j = 0; j < skin->jointCount; j++) {
-            skinJoints[jointIndex++] = NOM_INT(json, token);
+            model->joints[jointIndex++] = NOM_INT(json, token);
           }
         } else {
           token += NOM_VALUE(json, token);
@@ -832,7 +817,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     model->rootNode = model->nodeCount - 1;
     ModelNode* lastNode = &model->nodes[model->rootNode];
     lastNode->childCount = scenes[rootScene].nodeCount;
-    lastNode->children = &nodeChildren[childIndex];
+    lastNode->children = &model->children[childIndex];
     mat4_identity(lastNode->transform);
     lastNode->primitiveCount = 0;
     lastNode->skin = -1;

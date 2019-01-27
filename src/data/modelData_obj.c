@@ -87,12 +87,14 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
   }
 
   model->blobCount = 2;
-  model->blobs = calloc(model->blobCount, sizeof(Blob*));
+  model->bufferCount = 2;
+  model->attributeCount = 4;
+  model->primitiveCount = 1;
+  model->nodeCount = 1;
+  lovrModelDataAllocate(model);
+
   model->blobs[0] = lovrBlobCreate(vertexBuffer.data, vertexBuffer.length * sizeof(float), "obj vertex data");
   model->blobs[1] = lovrBlobCreate(indexBuffer.data, indexBuffer.length * sizeof(int), "obj index data");
-
-  model->bufferCount = 2;
-  model->buffers = calloc(model->bufferCount, sizeof(ModelBuffer));
 
   model->buffers[0] = (ModelBuffer) {
     .data = model->blobs[0]->data,
@@ -105,9 +107,6 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
     .size = model->blobs[1]->size,
     .stride = sizeof(int)
   };
-
-  model->attributeCount = 4;
-  model->attributes = calloc(model->attributeCount, sizeof(ModelAttribute));
 
   model->attributes[0] = (ModelAttribute) {
     .buffer = 0,
@@ -141,8 +140,6 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
     .components = 1
   };
 
-  model->primitiveCount = 1;
-  model->primitives = calloc(model->primitiveCount, sizeof(ModelPrimitive));
   model->primitives[0] = (ModelPrimitive) {
     .mode = DRAW_TRIANGLES,
     .attributes = {
@@ -154,15 +151,11 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) 
     .material = -1
   };
 
-  model->nodeCount = 1;
-  model->nodes = calloc(model->nodeCount, sizeof(ModelNode));
   model->nodes[0] = (ModelNode) {
     .transform = MAT4_IDENTITY,
     .primitiveIndex = 0,
     .primitiveCount = 1
   };
-
-  model->rootNode = 0;
 
   map_deinit(&vertexMap);
   vec_deinit(&vertices);

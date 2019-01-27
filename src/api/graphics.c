@@ -1170,15 +1170,24 @@ static int l_lovrGraphicsNewMesh(lua_State* L) {
   bool readable = lua_toboolean(L, drawModeIndex + 2);
   size_t bufferSize = count * format.stride;
   Buffer* vertexBuffer = lovrBufferCreate(bufferSize, NULL, BUFFER_VERTEX, usage, readable);
-  Mesh* mesh = lovrMeshCreate(mode, format, vertexBuffer, count);
+  Mesh* mesh = lovrMeshCreate(mode, vertexBuffer, count);
+
+  for (int i = 0; i < format.count; i++) {
+    lovrMeshAttachAttribute(mesh, format.attributes[i].name, &(MeshAttribute) {
+      .buffer = vertexBuffer,
+      .offset = format.attributes[i].offset,
+      .stride = format.stride,
+      .type = format.attributes[i].type,
+      .components = format.attributes[i].count
+    });
+  }
 
   lovrMeshAttachAttribute(mesh, "lovrDrawID", &(MeshAttribute) {
     .buffer = lovrGraphicsGetIdentityBuffer(),
     .type = U8,
     .components = 1,
     .divisor = 1,
-    .integer = true,
-    .enabled = true
+    .integer = true
   });
 
   if (dataIndex) {

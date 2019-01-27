@@ -473,12 +473,6 @@ static void lovrGpuBindImage(Image* image, int slot) {
 #endif
 
 static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
-  const char* key;
-  map_iter_t iter = map_iter(&mesh->attachments);
-
-  MeshAttribute layout[MAX_ATTRIBUTES];
-  memset(layout, 0, MAX_ATTRIBUTES * sizeof(MeshAttribute));
-
   lovrGpuBindVertexArray(mesh->vao);
 
   if (mesh->indexBuffer && mesh->indexCount > 0) {
@@ -493,12 +487,12 @@ static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
 #endif
   }
 
-  while ((key = map_next(&mesh->attributes, &iter)) != NULL) {
-    int location = lovrShaderGetAttributeId(shader, key);
+  for (int i = 0; i < mesh->attributeCount; i++) {
+    int location = lovrShaderGetAttributeId(shader, mesh->attributes[i].name);
 
     if (location >= 0) {
       MeshAttribute* attribute = map_get(&mesh->attributes, key);
-      layout[location] = *attribute;
+      //layout[location] = *attribute;
     }
   }
 
@@ -1952,34 +1946,20 @@ void lovrShaderDestroy(void* ref) {
 
 // Mesh
 
-Mesh* lovrMeshInit(Mesh* mesh, DrawMode mode, VertexFormat format, Buffer* vertexBuffer, uint32_t vertexCount) {
+Mesh* lovrMeshInit(Mesh* mesh, DrawMode mode, Buffer* vertexBuffer, uint32_t vertexCount) {
   mesh->mode = mode;
-  mesh->format = format;
   mesh->vertexBuffer = vertexBuffer;
   mesh->vertexCount = vertexCount;
   lovrRetain(mesh->vertexBuffer);
   glGenVertexArrays(1, &mesh->vao);
-
-  map_init(&mesh->attributes);
-  for (int i = 0; i < format.count; i++) {
-    lovrRetain(mesh->vertexBuffer);
-    map_set(&mesh->attributes, format.attributes[i].name, ((MeshAttribute) {
-      .buffer = mesh->vertexBuffer,
-      .offset = format.attributes[i].offset,
-      .stride = format.stride,
-      .type = format.attributes[i].type,
-      .components = format.attributes[i].count,
-      .enabled = true
-    }));
-  }
-
+  map_init(&mesh->attributeMap);
   return mesh;
 }
 
 Mesh* lovrMeshInitEmpty(Mesh* mesh, DrawMode mode) {
   mesh->mode = mode;
   glGenVertexArrays(1, &mesh->vao);
-  map_init(&mesh->attributes);
+  map_init(&mesh->attributeMap);
   return mesh;
 }
 
@@ -1987,13 +1967,10 @@ void lovrMeshDestroy(void* ref) {
   Mesh* mesh = ref;
   lovrGraphicsFlushMesh(mesh);
   glDeleteVertexArrays(1, &mesh->vao);
-  const char* key;
-  map_iter_t iter = map_iter(&mesh->attributes);
-  while ((key = map_next(&mesh->attributes, &iter)) != NULL) {
-    MeshAttribute* attribute = map_get(&mesh->attributes, key);
-    lovrRelease(attribute->buffer);
+  for (int i = 0; i < mesh->attributeCount; i++) {
+    lovrRelease(mesh->attributes[i].buffer);
   }
-  map_deinit(&mesh->attributes);
+  map_deinit(&mesh->attributeMap);
   lovrRelease(mesh->vertexBuffer);
   lovrRelease(mesh->indexBuffer);
   lovrRelease(mesh->material);

@@ -18,7 +18,7 @@ typedef struct {
   uint8_t components;
   uint8_t divisor;
   bool integer;
-  bool enabled;
+  bool disabled;
 } MeshAttribute;
 
 typedef map_t(MeshAttribute) map_attribute_t;
@@ -26,7 +26,9 @@ typedef map_t(MeshAttribute) map_attribute_t;
 typedef struct {
   Ref ref;
   DrawMode mode;
-  VertexFormat format;
+  MeshAttribute attributes[MAX_ATTRIBUTES];
+  map_int_t attributeMap;
+  int attributeCount;
   Buffer* vertexBuffer;
   Buffer* indexBuffer;
   uint32_t vertexCount;
@@ -36,12 +38,10 @@ typedef struct {
   uint32_t drawStart;
   uint32_t drawCount;
   Material* material;
-  map_attribute_t attributes;
-  MeshAttribute layout[MAX_ATTRIBUTES];
   GPU_MESH_FIELDS
 } Mesh;
 
-Mesh* lovrMeshInit(Mesh* mesh, DrawMode mode, VertexFormat format, Buffer* vertexBuffer, uint32_t vertexCount);
+Mesh* lovrMeshInit(Mesh* mesh, DrawMode mode, Buffer* vertexBuffer, uint32_t vertexCount);
 Mesh* lovrMeshInitEmpty(Mesh* mesh, DrawMode drawMode);
 #define lovrMeshCreate(...) lovrMeshInit(lovrAlloc(Mesh), __VA_ARGS__)
 #define lovrMeshCreateEmpty(...) lovrMeshInitEmpty(lovrAlloc(Mesh), __VA_ARGS__)

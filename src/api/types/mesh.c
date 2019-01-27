@@ -15,7 +15,6 @@ int l_lovrMeshAttachAttributes(lua_State* L) {
       MeshAttribute* attribute = lovrMeshGetAttribute(other, name);
       MeshAttribute attachment = *attribute;
       attachment.divisor = instanceDivisor;
-      attachment.enabled = true;
       lovrMeshAttachAttribute(mesh, name, &attachment);
     }
   } else if (lua_istable(L, 4)) {
@@ -27,7 +26,6 @@ int l_lovrMeshAttachAttributes(lua_State* L) {
       lovrAssert(attribute, "Tried to attach non-existent attribute %s", name);
       MeshAttribute attachment = *attribute;
       attachment.divisor = instanceDivisor;
-      attachment.enabled = true;
       lovrMeshAttachAttribute(mesh, name, &attachment);
       lua_pop(L, 1);
     }
@@ -39,7 +37,6 @@ int l_lovrMeshAttachAttributes(lua_State* L) {
       lovrAssert(attribute, "Tried to attach non-existent attribute %s", name);
       MeshAttribute attachment = *attribute;
       attachment.divisor = instanceDivisor;
-      attachment.enabled = true;
       lovrMeshAttachAttribute(mesh, name, &attachment);
     }
   }

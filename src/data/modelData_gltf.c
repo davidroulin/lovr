@@ -163,9 +163,10 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     return NULL;
   }
 
-  // Preparse
+  // Prepass: Basically we iterate over the tokens once and figure out how much memory we need and
+  // record the locations of tokens that we'll use later to fill in the memory once it's allocated.
+
   struct {
-    size_t miscSize;
     jsmntok_t* animations;
     jsmntok_t* attributes;
     jsmntok_t* buffers;
@@ -363,13 +364,15 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     }
   }
 
-  // Make space for fake root node if the root scene has multiple root nodes
+  // We only support a single root node, so if there is more than one root node in the scene then
+  // we create a fake "super root" node and add all the scene's root nodes as its children.
   if (info.sceneCount > 0 && scenes[rootScene].nodeCount > 1) {
     model->childCount += model->nodeCount;
     model->nodeCount++;
   }
 
-  // Allocate all the memory
+  // Allocate memory, then revisit all of the tokens that were recorded during the prepass and write
+  // their data into this memory.
   lovrModelDataAllocate(model);
 
   // Blobs
@@ -409,7 +412,6 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     ModelBuffer* buffer = model->buffers;
     for (int i = (token++)->size; i > 0; i--, buffer++) {
       size_t offset = 0;
-
       for (int k = (token++)->size; k > 0; k--) {
         gltfString key = NOM_STR(json, token);
         if (STR_EQ(key, "buffer")) { buffer->data = model->blobs[NOM_INT(json, token)]->data; }
@@ -419,6 +421,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
         else { token += NOM_VALUE(json, token); }
       }
 
+      // If this is the glb binary data, increment the offset to account for the file header
       if (buffer->data && buffer->data == source->data && glb) {
         offset += binOffset;
       }
@@ -795,8 +798,6 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
           ModelAttribute* attribute = &model->attributes[NOM_INT(json, token)];
           ModelBuffer* buffer = &model->buffers[attribute->buffer];
           skin->inverseBindMatrices = (float*) ((uint8_t*) buffer->data + attribute->offset);
-        } else if (STR_EQ(key, "skeleton")) {
-          skin->skeleton = NOM_INT(json, token);
         } else if (STR_EQ(key, "joints")) {
           skin->joints = &model->joints[jointIndex];
           skin->jointCount = (token++)->size;

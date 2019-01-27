@@ -97,8 +97,8 @@ typedef struct {
 } ModelBuffer;
 
 typedef struct {
-  uint32_t buffer;
   size_t offset;
+  uint32_t buffer;
   uint32_t count;
   AttributeType type;
   unsigned int components : 3;
@@ -139,9 +139,9 @@ typedef struct {
 } ModelMaterial;
 
 typedef struct {
-  DrawMode mode;
   ModelAttribute* attributes[MAX_DEFAULT_ATTRIBUTES];
   ModelAttribute* indices;
+  DrawMode mode;
   int material;
 } ModelPrimitive;
 
@@ -157,7 +157,6 @@ typedef struct {
 typedef struct {
   uint32_t* joints;
   uint32_t jointCount;
-  int skeleton;
   float* inverseBindMatrices;
 } ModelSkin;
 
@@ -185,7 +184,6 @@ typedef struct {
   int nodeCount;
   int skinCount;
   int rootNode;
-  uint8_t* misc;
 
   ModelAnimationChannel* channels;
   uint32_t* children;

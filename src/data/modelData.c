@@ -43,6 +43,7 @@ void lovrModelDataAllocate(ModelData* model) {
 
   size_t offset = 0;
   char* p = model->data = calloc(1, totalSize);
+  lovrAssert(model->data, "Out of memory");
   model->blobs = (Blob**) (p + offset), offset += sizes[0];
   model->images = (TextureData**) (p + offset), offset += sizes[1];
   model->animations = (ModelAnimation*) (p + offset), offset += sizes[2];

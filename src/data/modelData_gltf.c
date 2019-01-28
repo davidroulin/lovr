@@ -213,6 +213,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
       }
 
       animationSamplers = malloc(samplerCount * sizeof(gltfAnimationSampler));
+      lovrAssert(animationSamplers, "Out of memory");
       gltfAnimationSampler* sampler = animationSamplers;
       for (int i = (token++)->size; i > 0; i--) {
         for (int k = (token++)->size; k > 0; k--) {
@@ -260,6 +261,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
 
     } else if (STR_EQ(key, "samplers")) {
       samplers = malloc(token->size * sizeof(gltfSampler));
+      lovrAssert(samplers, "Out of memory");
       gltfSampler* sampler = samplers;
       for (int i = (token++)->size; i > 0; i--, sampler++) {
         sampler->filter.mode = FILTER_TRILINEAR;
@@ -314,6 +316,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
     } else if (STR_EQ(key, "meshes")) {
       info.meshes = token;
       meshes = malloc(token->size * sizeof(gltfMesh));
+      lovrAssert(meshes, "Out of memory");
       gltfMesh* mesh = meshes;
       model->primitiveCount = 0;
       for (int i = (token++)->size; i > 0; i--, mesh++) {
@@ -341,6 +344,7 @@ ModelData* lovrModelDataInitGltf(ModelData* model, Blob* source, ModelDataIO io)
       info.scenes = token;
       info.sceneCount = token->size;
       scenes = malloc(info.sceneCount * sizeof(gltfScene));
+      lovrAssert(scenes, "Out of memory");
       gltfScene* scene = scenes;
       for (int i = (token++)->size; i > 0; i--, scene++) {
         for (int k = (token++)->size; k > 0; k--) {

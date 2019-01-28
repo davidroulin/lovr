@@ -90,6 +90,17 @@ typedef enum {
 
 typedef enum { I8, U8, I16, U16, I32, U32, F32 } AttributeType;
 
+typedef union {
+  void* raw;
+  int8_t* i8;
+  uint8_t* u8;
+  int16_t* i16;
+  uint16_t* u16;
+  int32_t* i32;
+  uint32_t* u32;
+  float* f32;
+} AttributeData;
+
 typedef struct {
   char* data;
   size_t size;

@@ -487,65 +487,49 @@ static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
 #endif
   }
 
+  uint16_t enabledLocations = 0;
   for (int i = 0; i < mesh->attributeCount; i++) {
-    int location = lovrShaderGetAttributeId(shader, mesh->attributes[i].name);
+    MeshAttribute* attribute;
+    int location;
 
-    if (location >= 0) {
-      MeshAttribute* attribute = map_get(&mesh->attributes, key);
-      //layout[location] = *attribute;
+    if ((attribute = &mesh->attributes[i])->disabled) { continue; }
+    if ((location = lovrShaderGetAttributeLocation(shader, mesh->attributeNames[i])) < 0) { continue; }
+
+    lovrBufferFlush(attribute->buffer);
+    enabledLocations |= (1 << location);
+    if ((mesh->enabledLocations & (1 << location)) == 0) {
+      glEnableVertexAttribArray(i);
+    }
+
+    if (mesh->locations[location] == i) { continue; }
+
+    mesh->locations[location] = i;
+    lovrGpuBindBuffer(BUFFER_VERTEX, attribute->buffer->id, false);
+    glVertexAttribDivisor(i, attribute->divisor * divisorMultiplier);
+    GLenum type = convertAttributeType(attribute->type);
+    GLvoid* offset = (GLvoid*) (intptr_t) attribute->offset;
+
+    if (attribute->integer) {
+      glVertexAttribIPointer(i, attribute->components, type, attribute->stride, offset);
+    } else {
+      glVertexAttribPointer(i, attribute->components, type, attribute->normalized, attribute->stride, offset);
     }
   }
 
-  for (int i = 0; i < MAX_ATTRIBUTES; i++) {
-    MeshAttribute previous = mesh->layout[i];
-    MeshAttribute current = layout[i];
-
-    if (current.enabled) {
-      lovrBufferFlush(current.buffer);
-    }
-
-    if (!memcmp(&previous, &current, sizeof(MeshAttribute))) {
-      continue;
-    }
-
-    if (previous.enabled != current.enabled) {
-      if (current.enabled) {
-        glEnableVertexAttribArray(i);
-      } else {
-        glDisableVertexAttribArray(i);
-        mesh->layout[i] = current;
-        continue;
+  uint16_t diff = enabledLocations ^ mesh->enabledLocations;
+  if (diff != 0) {
+    for (int i = __builtin_clz(diff); i < MAX_ATTRIBUTES; i++) {
+      if (diff & (1 << i)) {
+        if (enabledLocations & (1 << i)) {
+          glEnableVertexAttribArray(i);
+        } else {
+          glDisableVertexAttribArray(i);
+        }
       }
     }
 
-    if (previous.divisor != current.divisor) {
-      glVertexAttribDivisor(i, current.divisor * divisorMultiplier);
-    }
-
-    bool changed =
-      previous.buffer != current.buffer ||
-      previous.type != current.type ||
-      previous.components != current.components ||
-      previous.offset != current.offset ||
-      previous.stride != current.stride;
-
-    if (changed) {
-      lovrGpuBindBuffer(BUFFER_VERTEX, current.buffer->id, false);
-      int count = current.components;
-      int stride = current.stride;
-      GLvoid* offset = (GLvoid*) current.offset;
-      GLenum type = convertAttributeType(current.type);
-
-      // TODO
-      if (current.integer) {
-        glVertexAttribIPointer(i, count, type, stride, offset);
-      } else {
-        glVertexAttribPointer(i, count, type, GL_TRUE, stride, offset);
-      }
-    }
+    mesh->enabledLocations = enabledLocations;
   }
-
-  memcpy(mesh->layout, layout, MAX_ATTRIBUTES * sizeof(MeshAttribute));
 }
 
 static void lovrGpuBindCanvas(Canvas* canvas, bool willDraw) {

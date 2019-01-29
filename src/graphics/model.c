@@ -80,7 +80,7 @@ Model* lovrModelInit(Model* model, ModelData* data) {
     model->meshes = calloc(data->primitiveCount, sizeof(Mesh*));
     for (int i = 0; i < data->primitiveCount; i++) {
       ModelPrimitive* primitive = &data->primitives[i];
-      model->meshes[i] = lovrMeshCreateEmpty(primitive->mode);
+      model->meshes[i] = lovrMeshCreate(primitive->mode, NULL, 0);
 
       bool setDrawRange = false;
       for (int j = 0; j < MAX_DEFAULT_ATTRIBUTES; j++) {

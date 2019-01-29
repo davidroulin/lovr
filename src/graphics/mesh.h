@@ -43,9 +43,7 @@ typedef struct {
 } Mesh;
 
 Mesh* lovrMeshInit(Mesh* mesh, DrawMode mode, Buffer* vertexBuffer, uint32_t vertexCount);
-Mesh* lovrMeshInitEmpty(Mesh* mesh, DrawMode drawMode);
 #define lovrMeshCreate(...) lovrMeshInit(lovrAlloc(Mesh), __VA_ARGS__)
-#define lovrMeshCreateEmpty(...) lovrMeshInitEmpty(lovrAlloc(Mesh), __VA_ARGS__)
 void lovrMeshDestroy(void* ref);
 Buffer* lovrMeshGetVertexBuffer(Mesh* mesh);
 Buffer* lovrMeshGetIndexBuffer(Mesh* mesh);

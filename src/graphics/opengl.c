@@ -497,28 +497,29 @@ static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
 
     lovrBufferFlush(attribute->buffer);
     enabledLocations |= (1 << location);
-    if ((mesh->enabledLocations & (1 << location)) == 0) {
-      glEnableVertexAttribArray(i);
-    }
 
     if (mesh->locations[location] == i) { continue; }
 
     mesh->locations[location] = i;
     lovrGpuBindBuffer(BUFFER_VERTEX, attribute->buffer->id, false);
-    glVertexAttribDivisor(i, attribute->divisor * divisorMultiplier);
+    glVertexAttribDivisor(location, attribute->divisor * divisorMultiplier);
     GLenum type = convertAttributeType(attribute->type);
     GLvoid* offset = (GLvoid*) (intptr_t) attribute->offset;
 
     if (attribute->integer) {
-      glVertexAttribIPointer(i, attribute->components, type, attribute->stride, offset);
+      glVertexAttribIPointer(location, attribute->components, type, attribute->stride, offset);
     } else {
-      glVertexAttribPointer(i, attribute->components, type, attribute->normalized, attribute->stride, offset);
+      glVertexAttribPointer(location, attribute->components, type, attribute->normalized, attribute->stride, offset);
     }
   }
 
   uint16_t diff = enabledLocations ^ mesh->enabledLocations;
   if (diff != 0) {
+#ifdef _WIN32
+    for (int i = 0; i < MAX_ATTRIBUTES; i++) {
+#else
     for (int i = __builtin_clz(diff); i < MAX_ATTRIBUTES; i++) {
+#endif
       if (diff & (1 << i)) {
         if (enabledLocations & (1 << i)) {
           glEnableVertexAttribArray(i);
@@ -1937,6 +1938,7 @@ Mesh* lovrMeshInit(Mesh* mesh, DrawMode mode, Buffer* vertexBuffer, uint32_t ver
   lovrRetain(mesh->vertexBuffer);
   glGenVertexArrays(1, &mesh->vao);
   map_init(&mesh->attributeMap);
+  memset(mesh->locations, 0xff, MAX_ATTRIBUTES * sizeof(uint8_t));
   return mesh;
 }
 

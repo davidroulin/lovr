@@ -60,6 +60,8 @@ void lovrMeshDetachAttribute(Mesh* mesh, const char* name) {
   for (int i = 0; i < MAX_ATTRIBUTES; i++) {
     if (mesh->locations[i] > *index) {
       mesh->locations[i]--;
+    } else if (mesh->locations[i] == *index) {
+      mesh->locations[i] = 0xff;
     }
   }
 }

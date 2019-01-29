@@ -515,11 +515,7 @@ static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
 
   uint16_t diff = enabledLocations ^ mesh->enabledLocations;
   if (diff != 0) {
-#ifdef _WIN32
     for (int i = 0; i < MAX_ATTRIBUTES; i++) {
-#else
-    for (int i = __builtin_clz(diff); i < MAX_ATTRIBUTES; i++) {
-#endif
       if (diff & (1 << i)) {
         if (enabledLocations & (1 << i)) {
           glEnableVertexAttribArray(i);

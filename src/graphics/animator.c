@@ -150,6 +150,10 @@ int* lovrAnimatorGetAnimationIndex(Animator* animator, const char* name) {
   return map_get(&animator->animations, name);
 }
 
+const char* lovrAnimatorGetAnimationName(Animator* animator, int index) {
+  return animator->data->animations[index].name;
+}
+
 void lovrAnimatorPlay(Animator* animator, int animation) {
   Track* track = &animator->tracks.data[animation];
   track->playing = true;

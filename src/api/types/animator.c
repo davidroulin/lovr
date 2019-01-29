@@ -39,6 +39,25 @@ int l_lovrAnimatorGetAnimationCount(lua_State* L) {
   return 1;
 }
 
+int l_lovrAnimatorGetAnimationNames(lua_State* L) {
+  Animator* animator = luax_checktype(L, 1, Animator);
+  int animationCount = lovrAnimatorGetAnimationCount(animator);
+
+  if (lua_istable(L, 2)) {
+    lua_settop(L, 2);
+  } else {
+    lua_settop(L, 1);
+    lua_createtable(L, animationCount, 0);
+  }
+
+  for (int i = 0; i < animationCount; i++) {
+    lua_pushstring(L, lovrAnimatorGetAnimationName(animator, i));
+    lua_rawseti(L, -2, i + 1);
+  }
+
+  return 1;
+}
+
 int l_lovrAnimatorPlay(lua_State* L) {
   Animator* animator = luax_checktype(L, 1, Animator);
   int animation = luax_checkanimation(L, 2, animator);
@@ -177,6 +196,7 @@ const luaL_Reg lovrAnimator[] = {
   { "reset", l_lovrAnimatorReset },
   { "update", l_lovrAnimatorUpdate },
   { "getAnimationCount", l_lovrAnimatorGetAnimationCount },
+  { "getAnimationNames", l_lovrAnimatorGetAnimationNames },
   { "play", l_lovrAnimatorPlay },
   { "stop", l_lovrAnimatorStop },
   { "pause", l_lovrAnimatorPause },

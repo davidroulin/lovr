@@ -1,8 +1,6 @@
 #include "data/blob.h"
 #include "data/textureData.h"
 #include "util.h"
-#include "lib/map/map.h"
-#include "lib/vec/vec.h"
 
 #pragma once
 

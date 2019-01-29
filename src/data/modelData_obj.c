@@ -1,5 +1,7 @@
 #include "data/modelData.h"
 #include "lib/math.h"
+#include "lib/map/map.h"
+#include "lib/vec/vec.h"
 #include <stdio.h>
 
 #define STARTS_WITH(a, b) !strncmp(a, b, strlen(b))

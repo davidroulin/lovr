@@ -4,7 +4,7 @@
 
 #define STARTS_WITH(a, b) !strncmp(a, b, strlen(b))
 
-ModelData* lovrModelDataInitObj(ModelData* model, Blob* source, ModelDataIO io) {
+ModelData* lovrModelDataInitObj(ModelData* model, Blob* source) {
   char* data = (char*) source->data;
   size_t length = source->size;
 

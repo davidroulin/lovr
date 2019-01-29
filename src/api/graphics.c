@@ -1267,8 +1267,7 @@ static int l_lovrGraphicsNewModel(lua_State* L) {
 
   if (!modelData) {
     Blob* blob = luax_readblob(L, 1, "Model");
-    static ModelDataIO io = { lovrFilesystemRead };
-    modelData = lovrModelDataCreate(blob, io);
+    modelData = lovrModelDataCreate(blob);
     lovrRelease(blob);
   }
 

@@ -206,13 +206,9 @@ typedef struct {
   int charCount;
 } ModelData;
 
-typedef struct {
-  void* (*read)(const char* path, size_t* bytesRead);
-} ModelDataIO;
-
-ModelData* lovrModelDataInit(ModelData* model, Blob* blob, ModelDataIO io);
-ModelData* lovrModelDataInitGltf(ModelData* model, Blob* blob, ModelDataIO io);
-ModelData* lovrModelDataInitObj(ModelData* model, Blob* blob, ModelDataIO io);
+ModelData* lovrModelDataInit(ModelData* model, Blob* blob);
 #define lovrModelDataCreate(...) lovrModelDataInit(lovrAlloc(ModelData), __VA_ARGS__)
+ModelData* lovrModelDataInitGltf(ModelData* model, Blob* blob);
+ModelData* lovrModelDataInitObj(ModelData* model, Blob* blob);
 void lovrModelDataDestroy(void* ref);
 void lovrModelDataAllocate(ModelData* model);

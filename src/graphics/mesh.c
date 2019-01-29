@@ -25,16 +25,6 @@ int lovrMeshGetAttributeCount(Mesh* mesh) {
   return mesh->attributeCount;
 }
 
-const char** lovrMeshGetAttributeNames(Mesh* mesh, int* count) {
-  *count = mesh->attributeCount;
-  return mesh->attributeNames;
-}
-
-const MeshAttribute* lovrMeshGetAttribute(Mesh* mesh, const char* name) {
-  int* index = map_get(&mesh->attributeMap, name);
-  return index ? &mesh->attributes[*index] : NULL;
-}
-
 void lovrMeshAttachAttribute(Mesh* mesh, const char* name, MeshAttribute* attribute) {
   lovrAssert(!map_get(&mesh->attributeMap, name), "Mesh already has an attribute named '%s'", name);
   lovrAssert(mesh->attributeCount < MAX_ATTRIBUTES, "Mesh already has the max number of attributes (%d)", MAX_ATTRIBUTES);
@@ -64,6 +54,11 @@ void lovrMeshDetachAttribute(Mesh* mesh, const char* name) {
       mesh->locations[i] = 0xff;
     }
   }
+}
+
+const MeshAttribute* lovrMeshGetAttribute(Mesh* mesh, const char* name) {
+  int* index = map_get(&mesh->attributeMap, name);
+  return index ? &mesh->attributes[*index] : NULL;
 }
 
 bool lovrMeshIsAttributeEnabled(Mesh* mesh, const char* name) {

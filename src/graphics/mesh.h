@@ -51,10 +51,9 @@ void lovrMeshSetIndexBuffer(Mesh* mesh, Buffer* buffer, uint32_t indexCount, siz
 uint32_t lovrMeshGetVertexCount(Mesh* mesh);
 uint32_t lovrMeshGetIndexCount(Mesh* mesh);
 size_t lovrMeshGetIndexSize(Mesh* mesh);
-const char** lovrMeshGetAttributeNames(Mesh* mesh, int* count);
-const MeshAttribute* lovrMeshGetAttribute(Mesh* mesh, const char* name);
 void lovrMeshAttachAttribute(Mesh* mesh, const char* name, MeshAttribute* attribute);
 void lovrMeshDetachAttribute(Mesh* mesh, const char* name);
+const MeshAttribute* lovrMeshGetAttribute(Mesh* mesh, const char* name);
 bool lovrMeshIsAttributeEnabled(Mesh* mesh, const char* name);
 void lovrMeshSetAttributeEnabled(Mesh* mesh, const char* name, bool enabled);
 DrawMode lovrMeshGetDrawMode(Mesh* mesh);

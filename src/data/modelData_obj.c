@@ -1,15 +1,67 @@
 #include "data/modelData.h"
+#include "filesystem/filesystem.h"
 #include "lib/math.h"
 #include "lib/map/map.h"
 #include "lib/vec/vec.h"
 #include <stdio.h>
+#include <ctype.h>
+
+typedef vec_t(ModelMaterial) vec_material_t;
 
 #define STARTS_WITH(a, b) !strncmp(a, b, strlen(b))
+
+static void parseMtl(char* path, vec_material_t* materials, char* base) {
+  size_t length = 0;
+  char* data = lovrFilesystemRead(path, &length);
+  lovrAssert(data && length > 0, "Unable to read mtl from '%s'", path);
+  char* s = data;
+
+  while (length > 0) {
+    int lineLength = 0;
+
+    if (STARTS_WITH(s, "newmtl ")) {
+      char name[128];
+      bool hasName = sscanf(s + 7, "%s\n%n", name, &lineLength);
+      lovrAssert(hasName, "Bad OBJ: Expected a material name");
+      vec_push(materials, ((ModelMaterial) {
+        .scalars[SCALAR_METALNESS] = 1.f,
+        .scalars[SCALAR_ROUGHNESS] = 1.f,
+        .colors[COLOR_DIFFUSE] = { 1.f, 1.f, 1.f, 1.f },
+        .colors[COLOR_EMISSIVE] = { 0.f, 0.f, 0.f, 0.f }
+      }));
+      memset(&vec_last(materials).textures, 0xff, MAX_MATERIAL_TEXTURES * sizeof(int));
+    } else if (STARTS_WITH(s, "map_Kd")) {
+      char filename[128];
+      bool hasFilename = sscanf(s + 7, "%s\n%n", filename, &lineLength);
+      lovrAssert(hasFilename, "Bad OBJ: Expected a texture filename");
+      char path[1024];
+      snprintf(path, "%s/%s", 1023, base, filename);
+      size_t size = 0;
+      void* data = lovrFilesystemRead(path, &size);
+      lovrAssert(data && size > 0, "Unable to read texture from %s", path);
+      Blob* blob = lovrBlobCreate(data, size, NULL);
+      TextureData* image = lovrTextureDataCreateFromBlob(blob, false);
+      // TODO what do I do with the image?  ew image + texture + material
+      lovrRelease(blob);
+    } else {
+      char* newline = memchr(s, '\n', length);
+      lineLength = newline - s + 1;
+    }
+
+    s += lineLength;
+    length -= lineLength;
+    while (length && isspace(*s)) length--, s++;
+  }
+
+  free(data);
+}
 
 ModelData* lovrModelDataInitObj(ModelData* model, Blob* source) {
   char* data = (char*) source->data;
   size_t length = source->size;
 
+  vec_material_t materials;
+  map_int_t materialNames;
   vec_float_t vertexBuffer;
   vec_int_t indexBuffer;
   map_int_t vertexMap;
@@ -17,12 +69,19 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source) {
   vec_float_t normals;
   vec_float_t uvs;
 
+  vec_init(&materials);
+  map_init(&materialNames);
   vec_init(&vertexBuffer);
   vec_init(&indexBuffer);
   map_init(&vertexMap);
   vec_init(&vertices);
   vec_init(&normals);
   vec_init(&uvs);
+
+  char base[1024];
+  strncpy(base, source->name, 1023);
+  char* slash = strrchr(base, '/');
+  if (slash) *slash = 0;
 
   while (length > 0) {
     int lineLength = 0;
@@ -79,6 +138,13 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source) {
         }
       }
       lineLength = s - data;
+    } else if (STARTS_WITH(data, "mtllib ")) {
+      char filename[1024];
+      bool hasName = sscanf(data + 7, "%1024s\n%n", filename, &lineLength);
+      lovrAssert(hasName, "Bad OBJ: Expected filename after mtllib");
+      char path[1024];
+      snprintf(path, 1023, "%s/%s", base, filename);
+      parseMtl(path, &materials, base);
     } else {
       char* newline = memchr(data, '\n', length);
       lineLength = newline - data + 1;
@@ -86,6 +152,7 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source) {
 
     data += lineLength;
     length -= lineLength;
+    while (length && isspace(*data)) length--, data++;
   }
 
   model->blobCount = 2;
@@ -159,6 +226,8 @@ ModelData* lovrModelDataInitObj(ModelData* model, Blob* source) {
     .primitiveCount = 1
   };
 
+  vec_deinit(&materials);
+  map_deinit(&materialNames);
   map_deinit(&vertexMap);
   vec_deinit(&vertices);
   vec_deinit(&normals);

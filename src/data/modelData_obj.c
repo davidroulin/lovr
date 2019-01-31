@@ -35,7 +35,7 @@ static void parseMtl(char* path, vec_material_t* materials, char* base) {
       bool hasFilename = sscanf(s + 7, "%s\n%n", filename, &lineLength);
       lovrAssert(hasFilename, "Bad OBJ: Expected a texture filename");
       char path[1024];
-      snprintf(path, "%s/%s", 1023, base, filename);
+      snprintf(path, 1023, "%s/%s", base, filename);
       size_t size = 0;
       void* data = lovrFilesystemRead(path, &size);
       lovrAssert(data && size > 0, "Unable to read texture from %s", path);

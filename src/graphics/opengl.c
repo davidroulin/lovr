@@ -472,7 +472,7 @@ static void lovrGpuBindImage(Image* image, int slot) {
 }
 #endif
 
-static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
+static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int baseDivisor) {
   lovrGpuBindVertexArray(mesh->vao);
 
   if (mesh->indexBuffer && mesh->indexCount > 0) {
@@ -498,11 +498,16 @@ static void lovrGpuBindMesh(Mesh* mesh, Shader* shader, int divisorMultiplier) {
     lovrBufferFlush(attribute->buffer);
     enabledLocations |= (1 << location);
 
+    uint16_t divisor = attribute->divisor * baseDivisor;
+    if (mesh->divisors[location] != divisor) {
+      glVertexAttribDivisor(location, divisor);
+      mesh->divisors[location] = divisor;
+    }
+
     if (mesh->locations[location] == i) { continue; }
 
     mesh->locations[location] = i;
     lovrGpuBindBuffer(BUFFER_VERTEX, attribute->buffer->id, false);
-    glVertexAttribDivisor(location, attribute->divisor * divisorMultiplier);
     GLenum type = convertAttributeType(attribute->type);
     GLvoid* offset = (GLvoid*) (intptr_t) attribute->offset;
 

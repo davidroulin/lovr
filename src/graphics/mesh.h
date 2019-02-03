@@ -28,6 +28,7 @@ typedef struct {
   MeshAttribute attributes[MAX_ATTRIBUTES];
   uint8_t locations[MAX_ATTRIBUTES];
   uint16_t enabledLocations;
+  uint16_t divisors[MAX_ATTRIBUTES];
   map_int_t attributeMap;
   int attributeCount;
   Buffer* vertexBuffer;

@@ -236,10 +236,10 @@ static void applyAABB(Model* model, int nodeIndex, float aabb[6]) {
       };
 
       aabb[0] = MIN(aabb[0], min[0]);
-      aabb[1] = MIN(aabb[1], min[1]);
-      aabb[2] = MIN(aabb[2], min[2]);
-      aabb[3] = MAX(aabb[3], max[0]);
-      aabb[4] = MAX(aabb[4], max[1]);
+      aabb[1] = MAX(aabb[1], max[0]);
+      aabb[2] = MIN(aabb[2], min[1]);
+      aabb[3] = MAX(aabb[3], max[1]);
+      aabb[4] = MIN(aabb[4], min[2]);
       aabb[5] = MAX(aabb[5], max[2]);
     }
   }
@@ -250,8 +250,8 @@ static void applyAABB(Model* model, int nodeIndex, float aabb[6]) {
 }
 
 void lovrModelGetAABB(Model* model, float aabb[6]) {
-  aabb[0] = aabb[1] = aabb[2] = FLT_MAX;
-  aabb[3] = aabb[4] = aabb[5] = -FLT_MAX;
+  aabb[0] = aabb[2] = aabb[4] = FLT_MAX;
+  aabb[1] = aabb[3] = aabb[5] = -FLT_MAX;
   updateGlobalNodeTransform(model, model->data->rootNode, (float[]) MAT4_IDENTITY);
   applyAABB(model, model->data->rootNode, aabb);
 }
